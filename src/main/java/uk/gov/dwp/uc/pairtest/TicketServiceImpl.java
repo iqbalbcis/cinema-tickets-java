@@ -37,6 +37,9 @@ public class TicketServiceImpl implements TicketService {
 
         int adultCount = countTicketsByType(Type.ADULT, ticketTypeRequests);
         int childCount = countTicketsByType(Type.CHILD, ticketTypeRequests);
+        int infantCount = countTicketsByType(Type.INFANT, ticketTypeRequests);
+
+        validateBusinessRules(adultCount, childCount, infantCount);
 
         int totalAmount = calculateTotalAmount(ticketTypeRequests);
         int totalSeats = calculateTotalSeats(adultCount, childCount);
@@ -96,6 +99,28 @@ public class TicketServiceImpl implements TicketService {
         if (request.ticketType() == null) {
             throw new InvalidPurchaseException(
                     "Invalid purchase request: ticket type cannot be null.");
+        }
+    }
+
+    private void validateBusinessRules(int adultCount, int childCount, int infantCount) {
+        int totalTickets = adultCount + childCount + infantCount;
+
+        if (totalTickets > MAX_TICKETS_PER_PURCHASE) {
+            throw new InvalidPurchaseException(
+                    "Invalid purchase request: cannot purchase more than "
+                            + MAX_TICKETS_PER_PURCHASE + " tickets at a time.");
+        }
+
+        if (adultCount == 0 && (childCount > 0 || infantCount > 0)) {
+            throw new InvalidPurchaseException(
+                    "Invalid purchase request: Child and Infant tickets cannot be " +
+                            "purchased without an Adult ticket.");
+        }
+
+        if (infantCount > adultCount) {
+            throw new InvalidPurchaseException(
+                    "Invalid purchase request: number of Infants cannot exceed the number" +
+                            " of Adults, as each Infant must sit on an Adult's lap.");
         }
     }
 

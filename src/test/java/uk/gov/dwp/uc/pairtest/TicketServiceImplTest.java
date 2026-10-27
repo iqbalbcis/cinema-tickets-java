@@ -12,6 +12,7 @@ import uk.gov.dwp.uc.pairtest.domain.TicketTypeRequest;
 import uk.gov.dwp.uc.pairtest.domain.TicketTypeRequest.Type;
 import uk.gov.dwp.uc.pairtest.exception.InvalidPurchaseException;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -119,6 +120,64 @@ class TicketServiceImplTest {
         assertThrows(InvalidPurchaseException.class, () -> ticketService.purchaseTickets(ACCOUNT_ID, invalidRequest));
         verifyNoInteractions(paymentService, seatService);
     }
+
+    @Test
+    @DisplayName("Exactly 25 tickets (maximum allowed): should process payment and reservation successfully")
+    public void purchaseMaximumTickets_ShouldWork() {
+        TicketTypeRequest adult = new TicketTypeRequest(Type.ADULT, 10);
+        TicketTypeRequest child = new TicketTypeRequest(Type.CHILD, 10);
+        TicketTypeRequest infant = new TicketTypeRequest(Type.INFANT, 5);
+
+        ticketService.purchaseTickets(ACCOUNT_ID, adult, child, infant);
+
+        int expectedAmount = (10 * ADULT_TICKET_PRICE)
+                + (10 * CHILD_TICKET_PRICE)
+                + (5 * INFANT_TICKET_PRICE);
+
+        int expectedSeats = 10 + 10;
+
+        verify(paymentService).makePayment(ACCOUNT_ID, expectedAmount);
+        verify(seatService).reserveSeat(ACCOUNT_ID, expectedSeats);
+    }
+
+    @Test
+    @DisplayName("More than 25 tickets requested: should throw InvalidPurchaseException with descriptive message")
+    public void purchaseTickets_ExceedMaxTickets_ShouldThrowException() {
+        TicketTypeRequest adult = new TicketTypeRequest(Type.ADULT, 20);
+        TicketTypeRequest child = new TicketTypeRequest(Type.CHILD, 10);
+        InvalidPurchaseException exception =
+                assertThrows(InvalidPurchaseException.class, () -> ticketService.purchaseTickets(ACCOUNT_ID, adult, child));
+        assertEquals("Invalid purchase request: cannot purchase more than "
+                + MAX_TICKETS_PER_PURCHASE + " tickets at a time.", exception.getMessage());
+
+        verifyNoInteractions(paymentService, seatService);
+    }
+
+    @Test
+    @DisplayName("Child ticket without adult: should throw InvalidPurchaseException")
+    public void purchaseTickets_ChildWithoutAdult_ShouldThrowException() {
+        TicketTypeRequest child = new TicketTypeRequest(Type.CHILD, CHILD_TICKET);
+        assertThrows(InvalidPurchaseException.class, () -> ticketService.purchaseTickets(ACCOUNT_ID, child));
+        verifyNoInteractions(paymentService, seatService);
+    }
+
+    @Test
+    @DisplayName("Infant ticket without adult: should throw InvalidPurchaseException")
+    public void purchaseTickets_InfantWithoutAdult_ShouldThrowException() {
+        TicketTypeRequest infant = new TicketTypeRequest(Type.INFANT, INFANT_TICKET);
+        assertThrows(InvalidPurchaseException.class, () -> ticketService.purchaseTickets(ACCOUNT_ID, infant));
+        verifyNoInteractions(paymentService, seatService);
+    }
+
+    @Test
+    @DisplayName("More infants than adults: should throw InvalidPurchaseException")
+    public void purchaseTickets_InfantsExceedAdults_ShouldThrowException() {
+        TicketTypeRequest adult = new TicketTypeRequest(Type.ADULT, 1);
+        TicketTypeRequest infant = new TicketTypeRequest(Type.INFANT, INFANT_TICKET);
+        assertThrows(InvalidPurchaseException.class, () -> ticketService.purchaseTickets(ACCOUNT_ID, adult, infant));
+        verifyNoInteractions(paymentService, seatService);
+    }
+
 
 
 }
