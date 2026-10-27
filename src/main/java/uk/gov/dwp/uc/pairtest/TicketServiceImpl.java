@@ -33,6 +33,7 @@ public class TicketServiceImpl implements TicketService {
     public void purchaseTickets(Long accountId, TicketTypeRequest... ticketTypeRequests) throws InvalidPurchaseException {
 
         validateAccountId(accountId);
+        validateTicketRequests(ticketTypeRequests);
 
         int adultCount = countTicketsByType(Type.ADULT, ticketTypeRequests);
         int childCount = countTicketsByType(Type.CHILD, ticketTypeRequests);
@@ -67,6 +68,34 @@ public class TicketServiceImpl implements TicketService {
         if (accountId == null || accountId <= 0) {
             throw new InvalidPurchaseException(
                     "Invalid account ID: account ID must be greater than zero.");
+        }
+    }
+
+    private void validateTicketRequests(TicketTypeRequest... ticketTypeRequests) {
+        if (ticketTypeRequests == null || ticketTypeRequests.length == 0) {
+            throw new InvalidPurchaseException(
+                    "Invalid purchase request: no ticket requests are provided.");
+        }
+
+        for (TicketTypeRequest request : ticketTypeRequests) {
+            validateSingleRequest(request);
+        }
+    }
+
+    private void validateSingleRequest(TicketTypeRequest request) {
+        if (request == null) {
+            throw new InvalidPurchaseException(
+                    "Invalid purchase request: ticket request cannot be null.");
+        }
+
+        if (request.noOfTickets() <= 0) {
+            throw new InvalidPurchaseException(
+                    "Invalid purchase request: number of tickets must be greater than zero.");
+        }
+
+        if (request.ticketType() == null) {
+            throw new InvalidPurchaseException(
+                    "Invalid purchase request: ticket type cannot be null.");
         }
     }
 

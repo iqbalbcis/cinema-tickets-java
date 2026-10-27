@@ -78,4 +78,47 @@ class TicketServiceImplTest {
         verifyNoInteractions(paymentService, seatService);
     }
 
+    @Test
+    @DisplayName("No ticket requests provided: should throw InvalidPurchaseException")
+    public void purchaseTickets_NoTicketRequests_ShouldThrowException() {
+        assertThrows(InvalidPurchaseException.class, () -> ticketService.purchaseTickets(ACCOUNT_ID));
+        verifyNoInteractions(paymentService, seatService);
+    }
+
+    @Test
+    @DisplayName("Null ticket request in varargs: should throw InvalidPurchaseException")
+    public void purchaseTickets_NullTicketRequest_ShouldThrowException() {
+        assertThrows(InvalidPurchaseException.class, () -> ticketService.purchaseTickets(ACCOUNT_ID, (TicketTypeRequest)null));
+        verifyNoInteractions(paymentService, seatService);
+    }
+
+    @Test
+    @DisplayName("Ticket request with zero quantity: should throw InvalidPurchaseException")
+    public void purchaseTickets_AdultTicketCountZero_ShouldThrowException() {
+        TicketTypeRequest adult = new TicketTypeRequest(Type.ADULT, 0);
+        assertThrows(InvalidPurchaseException.class, () -> ticketService.purchaseTickets(ACCOUNT_ID, adult));
+        verifyNoInteractions(paymentService, seatService);
+    }
+
+    @Test
+    @DisplayName("Negative ticket quantity: should throw InvalidPurchaseException")
+    void purchaseTickets_NegativeQuantity_ShouldThrowException() {
+        TicketTypeRequest adult = new TicketTypeRequest(Type.ADULT, -1);
+
+        assertThrows(
+                InvalidPurchaseException.class,
+                () -> ticketService.purchaseTickets(ACCOUNT_ID, adult)
+        );
+        verifyNoInteractions(paymentService, seatService);
+    }
+
+    @Test
+    @DisplayName("Null ticket type in request: should throw InvalidPurchaseException")
+    void purchaseTickets_NullTicketType_ShouldThrowException() {
+        TicketTypeRequest invalidRequest = new TicketTypeRequest( null, 1);
+        assertThrows(InvalidPurchaseException.class, () -> ticketService.purchaseTickets(ACCOUNT_ID, invalidRequest));
+        verifyNoInteractions(paymentService, seatService);
+    }
+
+
 }
