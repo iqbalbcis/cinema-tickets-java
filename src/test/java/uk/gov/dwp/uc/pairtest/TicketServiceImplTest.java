@@ -10,8 +10,11 @@ import thirdparty.paymentgateway.TicketPaymentService;
 import thirdparty.seatbooking.SeatReservationService;
 import uk.gov.dwp.uc.pairtest.domain.TicketTypeRequest;
 import uk.gov.dwp.uc.pairtest.domain.TicketTypeRequest.Type;
+import uk.gov.dwp.uc.pairtest.exception.InvalidPurchaseException;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class TicketServiceImplTest {
@@ -45,6 +48,34 @@ class TicketServiceImplTest {
 
         verify(paymentService).makePayment(ACCOUNT_ID, ADULT_TICKET_PRICE);
         verify(seatService).reserveSeat(ACCOUNT_ID, 1);
+    }
+
+    @Test
+    @DisplayName("Null account ID: should throw InvalidPurchaseException")
+    public void purchaseTickets_NullAccountId_ShouldThrowException() {
+        TicketTypeRequest adult = new TicketTypeRequest(Type.ADULT, ADULT_TICKET);
+        assertThrows(InvalidPurchaseException.class, () -> ticketService.purchaseTickets(null, adult));
+        verifyNoInteractions(paymentService, seatService);
+    }
+
+    @Test
+    @DisplayName("Account ID of zero: should throw InvalidPurchaseException")
+    public void purchaseTickets_AccountIdZero_ShouldThrowException() {
+        TicketTypeRequest adult = new TicketTypeRequest(Type.ADULT, ADULT_TICKET);
+        assertThrows(InvalidPurchaseException.class, () -> ticketService.purchaseTickets(0L, adult));
+        verifyNoInteractions(paymentService, seatService);
+    }
+
+    @Test
+    @DisplayName("Negative account ID: should throw InvalidPurchaseException")
+    void purchaseTickets_NegativeAccountId_ShouldThrowException() {
+        TicketTypeRequest adult = new TicketTypeRequest(Type.ADULT, 1);
+
+        assertThrows(
+                InvalidPurchaseException.class,
+                () -> ticketService.purchaseTickets(-1L, adult)
+        );
+        verifyNoInteractions(paymentService, seatService);
     }
 
 }

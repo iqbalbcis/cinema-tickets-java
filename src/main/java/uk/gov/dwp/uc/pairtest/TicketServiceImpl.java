@@ -32,6 +32,8 @@ public class TicketServiceImpl implements TicketService {
     @Override
     public void purchaseTickets(Long accountId, TicketTypeRequest... ticketTypeRequests) throws InvalidPurchaseException {
 
+        validateAccountId(accountId);
+
         int adultCount = countTicketsByType(Type.ADULT, ticketTypeRequests);
         int childCount = countTicketsByType(Type.CHILD, ticketTypeRequests);
 
@@ -59,6 +61,13 @@ public class TicketServiceImpl implements TicketService {
                 .filter(r -> r.ticketType() == type)
                 .mapToInt(TicketTypeRequest::noOfTickets)
                 .sum();
+    }
+
+    private void validateAccountId(Long accountId) {
+        if (accountId == null || accountId <= 0) {
+            throw new InvalidPurchaseException(
+                    "Invalid account ID: account ID must be greater than zero.");
+        }
     }
 
 }
