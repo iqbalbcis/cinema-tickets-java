@@ -52,6 +52,41 @@ class TicketServiceImplTest {
     }
 
     @Test
+    @DisplayName("Adult and child tickets: should calculate correct total payment and seat count")
+    public void purchaseAdultAndChildTickets_ShouldCalculatePaymentAndSeatsCorrectly() {
+        TicketTypeRequest adult = new TicketTypeRequest(Type.ADULT, ADULT_TICKET);
+        TicketTypeRequest child = new TicketTypeRequest(Type.CHILD, CHILD_TICKET);
+
+        ticketService.purchaseTickets(ACCOUNT_ID, adult, child);
+
+        int expectedAmount = (ADULT_TICKET * ADULT_TICKET_PRICE)
+                + (CHILD_TICKET * CHILD_TICKET_PRICE);
+        int expectedSeats = ADULT_TICKET + CHILD_TICKET;
+
+        verify(paymentService).makePayment(ACCOUNT_ID, expectedAmount);
+        verify(seatService).reserveSeat(ACCOUNT_ID, expectedSeats);
+    }
+
+    @Test
+    @DisplayName("Adult, child and infant tickets: infants should not be charged or allocated a seat")
+    public void purchaseAdultChildAndInfant_ShouldIgnoreInfantInSeatsAndPrice() {
+        TicketTypeRequest adult = new TicketTypeRequest(Type.ADULT, ADULT_TICKET);
+        TicketTypeRequest child = new TicketTypeRequest(Type.CHILD, CHILD_TICKET);
+        TicketTypeRequest infant = new TicketTypeRequest(Type.INFANT, INFANT_TICKET);
+
+        ticketService.purchaseTickets(ACCOUNT_ID, adult, child, infant);
+
+        int expectedAmount = (ADULT_TICKET * ADULT_TICKET_PRICE)
+                + (CHILD_TICKET * CHILD_TICKET_PRICE)
+                + (INFANT_TICKET * INFANT_TICKET_PRICE);
+
+        int expectedSeats = ADULT_TICKET + CHILD_TICKET;
+
+        verify(paymentService).makePayment(ACCOUNT_ID, expectedAmount);
+        verify(seatService).reserveSeat(ACCOUNT_ID, expectedSeats);
+    }
+
+    @Test
     @DisplayName("Null account ID: should throw InvalidPurchaseException")
     public void purchaseTickets_NullAccountId_ShouldThrowException() {
         TicketTypeRequest adult = new TicketTypeRequest(Type.ADULT, ADULT_TICKET);
