@@ -6,7 +6,9 @@ import uk.gov.dwp.uc.pairtest.domain.TicketTypeRequest;
 import uk.gov.dwp.uc.pairtest.domain.TicketTypeRequest.Type;
 import uk.gov.dwp.uc.pairtest.exception.InvalidPurchaseException;
 
+import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
 
 public class TicketServiceImpl implements TicketService {
 
@@ -30,6 +32,33 @@ public class TicketServiceImpl implements TicketService {
     @Override
     public void purchaseTickets(Long accountId, TicketTypeRequest... ticketTypeRequests) throws InvalidPurchaseException {
 
+        int adultCount = countTicketsByType(Type.ADULT, ticketTypeRequests);
+        int childCount = countTicketsByType(Type.CHILD, ticketTypeRequests);
+
+        int totalAmount = calculateTotalAmount(ticketTypeRequests);
+        int totalSeats = calculateTotalSeats(adultCount, childCount);
+
+        ticketPaymentService.makePayment(accountId, totalAmount);
+        seatReservationService.reserveSeat(accountId, totalSeats);
+    }
+
+    private int calculateTotalAmount(TicketTypeRequest... ticketTypeRequests) {
+        return Arrays.stream(ticketTypeRequests)
+                .mapToInt(r -> r.noOfTickets() * PRICES.get(r.ticketType()))
+                .sum();
+    }
+
+    private int calculateTotalSeats(int adultCount, int childCount) {
+        return adultCount + childCount;
+    }
+
+    private int countTicketsByType(Type type,
+                                   TicketTypeRequest... ticketTypeRequests) {
+        return Arrays.stream(ticketTypeRequests)
+                .filter(Objects::nonNull)
+                .filter(r -> r.ticketType() == type)
+                .mapToInt(TicketTypeRequest::noOfTickets)
+                .sum();
     }
 
 }
